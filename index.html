@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>3д Куб на Javascript</title>
+		<script src="js/vector.js"></script>
+		<script src="js/shape.js"></script>
+		<script src="js/camera.js"></script>
+		<script src="js/matrix.js"></script>
+		<script src="js/triangles.js"></script>
+		<script src="js/color.js"></script>
+		<script src="js/draw.js"></script>
+		<script src="js/light.js"></script>
+		<script src="js/clip.js"></script>
+		<script src="js/cube.js"></script>
+		<script src="js/dimage.js"></script>
+	</head>
+	<body>
+		<canvas id="texture-render" ></canvas>
+		<canvas id="cube-canvas" width="640" height="360" ></canvas>
+		<canvas id="clear-canvas"></canvas>
+		<style>
+			#cube-canvas {
+				margin: 0 auto;
+				background-color: black;
+			}
+			#texture-render , #clear-canvas {
+				display: none;
+			}
+		</style>
+		<script>
+			//Основные константы
+			const canvas       = document.querySelector( "#cube-canvas" ); //Основной холст
+			const tcanvas      = document.querySelector( "#texture-render" ); //Канвас для рендера текстуры
+			const clearCanvas  = document.querySelector( "#clear-canvas" ); //Канвас для чистки буфера пикселей
+				  clearCanvas.width  = canvas.width;
+		          clearCanvas.height = canvas.height;
+			const context      = canvas.getContext('2d' );
+				  clearContext = clearCanvas.getContext('2d'  );
+			context.font       = "15px roboto";
+			const widthH       = parseInt( canvas.width / 2 );
+			const heightH      = parseInt( canvas.height / 2 );
+			const zNear        = 0.1;
+			const zFar         = 100;
+			const fovDeg       = 45;
+			const aspectRation = canvas.height / canvas.width;
+			const fFovRad      = 1 / Math.tan( ( fovDeg * 0.5 ) / 180 * Math.PI ); 
+			const figscaleX    = widthH;
+			const figscaleY    = heightH;
+			const textureD     = new DImage( "img/texture.jpg" );
+			const textureS     = new DImage( "img/texture_spec.jpg" );
+			const textureR     = new DImage( "img/texture_emmi.jpg" );
+			//Объект куба
+			const cube  = CreateCube( new Vector3F( 0 , 1 , 5 ) );
+				  cube.scale.x = 0.8;
+				  cube.scale.y = 0.8;
+				  cube.scale.z = 0.8;
+			const cube1 = CreateCube( new Vector3F( 3 , 1 , 7 ) );
+			const cube2 = CreateCube( new Vector3F( -3 , 1 , 7 ) );
+				  cube2.scale.x = 0.6;
+				  cube2.scale.y = 0.6;
+				  cube2.scale.z = 0.6;
+			//Объекты матриц
+			const projectionMatrix   = mat4.Perspective( mat4.Create() , fFovRad , aspectRation , zNear , zFar );
+			const viewMatrix         = mat4.Create();
+			let viewProjectionMatrix = mat4.MultiplyMatrix( viewMatrix , projectionMatrix );
+			//Объект освещения
+			const globalLight = new Light( new Vector3F( 1 , 10 , 1 ) , new Color( 255 , 255 , 255 ) , 30 , 0.1 );
+			//Вывод текста сообщения вверху экрана
+			const text     = "WSAD для перемещения | RGB для смены цвета";
+			const textInfo = context.measureText( text );
+			const textPos  = parseInt( widthH - textInfo.width * 0.5 );
+			draw.InitFrameImage();
+			const camera = new Camera( new Vector3F( 0 , 3 , -4 ) , 1.595 , -0.204 );
+			//Основной цикл
+			function Frame() {
+				mat4.LookAt( viewMatrix , camera.eye , camera.GetCenter() , camera.up );
+				viewProjectionMatrix = mat4.MultiplyMatrix( viewMatrix , projectionMatrix );
+				cube.RotateY( 0.02 );
+				cube1.RotateY( 0.01 );
+				cube2.RotateY( 0.03 );
+				cube.Update();
+				cube1.Update();
+				cube2.Update();
+				cube.Draw();
+				cube1.Draw();
+				cube2.Draw();
+				draw.Draw();
+				context.fillStyle = "white";
+				context.fillText( text , textPos , 50 )
+				window.requestAnimationFrame( Frame );
+			}
+			canvas.onmousemove = function( e ) {
+				let offset = camera.GetOffset( e.movementX , -e.movementY );
+				camera.yaw  += offset[ 0 ];
+				camera.pitch = Math.max( Math.min( camera.pitch + offset[ 1 ] , 1.4 ) , -0.9 ); //Ограничения на поворот
+				camera.Rotate();
+			}
+			window.addEventListener( "keydown" , function( e ) {
+				if( e.keyCode == 87 ) {
+					camera.MoveFront( 1 );
+				}
+				if( e.keyCode == 83 ) {
+					camera.MoveFront( -1 );
+				}
+				if( e.keyCode == 65 ) {
+					camera.MoveStrafe( 1 );
+				}
+				if( e.keyCode == 68 ) {
+					camera.MoveStrafe( -1 );
+				}
+				if( e.keyCode == 82 ) {
+					globalLight.SetColor( new Color( 255 , 0 , 0 ) );
+				}
+				if( e.keyCode == 71 ) {
+					globalLight.SetColor( new Color( 0 , 255 , 0 ) );
+				}
+				if( e.keyCode == 66 ) {
+					globalLight.SetColor( new Color( 0 , 0 , 255 ) );
+				}
+			});
+			setTimeout( function() {
+				window.requestAnimationFrame( Frame );
+			} , 1000 );
+			canvas.addEventListener("click", async () => {
+				await canvas.requestFullscreen();
+				await canvas.requestPointerLock( {
+				unadjustedMovement: true,
+			});
+		});
+		</script>
+	</body>
+</html>
