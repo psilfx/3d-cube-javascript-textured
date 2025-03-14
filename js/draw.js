@@ -50,7 +50,8 @@ class Draw {
 			let frags    = triangle.GetFrags();
 			let uv       = triangle.GetUV();
 			let triColor = this.GetColorFromPoint( points[ 0 ] , normal , frags[ 0 ] , light );
-			this.TextureTriangle( points , uv , triColor  );
+			//this.TextureTriangle( points , uv , triColor  );
+			this.TextureTriangleBarucentric( points , uv , triColor  );
 		}
 	}
 	/**
@@ -103,10 +104,8 @@ class Draw {
 		//Нормализуем отрезки, один может быть короче другого
 		let dda1Decrease  = dda1.length / length;
 		let dda2Decrease  = dda2.length / length;
-		dda1.increment.x *= dda1Decrease;
-		dda1.increment.y *= dda1Decrease;
-		dda2.increment.x *= dda2Decrease;
-		dda2.increment.y *= dda2Decrease;
+		dda1.increment.x *= dda1Decrease , dda1.increment.y *= dda1Decrease;
+		dda2.increment.x *= dda2Decrease , dda2.increment.y *= dda2Decrease;
 		//Берём стартовые точки для двух направлений
 		let triPoint1 = point1.Copy();
 		let triPoint2 = point1.Copy();
@@ -164,6 +163,59 @@ class Draw {
 		let stepX = dx / stepL;
 		let stepY = dy / stepL;
 		return { increment : { x : stepX , y : stepY } , length : stepL , diff : { x : dx , y : dy } };	
+	}
+	/**
+	 ** @desc Получает барицентрические координаты для каждой точки и возвращает их
+	 ** @vars (int) x - x - пространства треугольника, (int) y - y - пространства треугольника, (Vector3F) point1 - точка треугольника, (Vector3F) point2 - точка треугольника, (Vector3F) point3 - точка треугольника
+	 **/
+	GetBarycentric( x , y , point1 , point2 , point3 ) {
+		let lambda1 = 	( ( point2.y - point3.y ) * ( x - point3.x ) + ( point3.x - point2.x ) * ( y - point3.y ) ) / 
+						( ( point2.y - point3.y ) * ( point1.x - point3.x ) + ( point3.x - point2.x ) * ( point1.y - point3.y ) );
+		let lambda2 = 	( ( point3.y - point1.y ) * ( x - point3.x ) + ( point1.x - point3.x ) * ( y - point3.y ) ) / 
+						( ( point2.y - point3.y ) * ( point1.x - point3.x ) + ( point3.x - point2.x ) * ( point1.y - point3.y ) );
+		let lambda3 = 1 - lambda1 - lambda2;
+		return { lambda1 , lambda2 , lambda3 };
+	}
+	/**
+	 ** @desc Закрашивает треугольник пикселями используя барицентрические координаты
+	 ** @vars (array) triangle - массив точек треугольника, (array) uv - массив координат текстур для точек, (Color) defColor - цвет с значением diff для треугольника
+	 **/
+	TextureTriangleBarucentric( triangle , uv , defColor ) {
+		//Преобразует точки в пространство экрана
+		let point1 = new Vector3F( triangle[ 0 ].x * figscaleX , triangle[ 0 ].y * figscaleY , triangle[ 0 ].z );
+		let point2 = new Vector3F( triangle[ 1 ].x * figscaleX , triangle[ 1 ].y * figscaleY , triangle[ 1 ].z );
+		let point3 = new Vector3F( triangle[ 2 ].x * figscaleX , triangle[ 2 ].y * figscaleY , triangle[ 2 ].z );
+		//Координаты текстуры для каждой точки
+		let uv1    = uv[ 0 ].Copy();
+		let uv2    = uv[ 1 ].Copy();
+		let uv3    = uv[ 2 ].Copy();
+		//Прямоугольник из треугольника
+		let minX   = Math.min( point1.x , point2.x , point3.x );
+		let maxX   = Math.max( point1.x , point2.x , point3.x );
+		let minY   = Math.min( point1.y , point2.y , point3.y );
+		let maxY   = Math.max( point1.y , point2.y , point3.y );
+		//Проходим по каждому пикселю в ограничивающем прямоугольнике
+		for ( let x = minX; x <= maxX; x++ ) {
+			for ( let y = minY; y <= maxY; y++ ) {
+				//Вычисляет барицентрические координаты
+				let { lambda1, lambda2, lambda3 } = this.GetBarycentric( x , y , point1 , point2 , point3 );
+				//Проверяет, находится ли точка внутри треугольника
+				if ( lambda1 >= 0 && lambda2 >= 0 && lambda3 >= 0 ) {
+					//Интерполирует текстурные координаты
+					let u = lambda1 * uv1.x + lambda2 * uv2.x + lambda3 * uv3.x;
+					let v = lambda1 * uv1.y + lambda2 * uv2.y + lambda3 * uv3.y;
+					//Получает цвет из набора текстур
+					let colorD = textureD.GetPixelByUV( u , v ); //Основная текстура
+					let colorS = textureS.GetPixelByUV( u , v ); //Текстура бликов
+					let colorE = textureR.GetPixelByUV( u , v ); //Текстура света emissive
+					let outColor = defColor.Copy();
+					if( colorD.a > 0 ) outColor = defColor.Multiply( colorPercentCache[ colorS.r ] ).Mix( colorD ).Multiply( outColor.a ).Mix( colorE ); //Смешиваем цвета - outColor.a - значение diff
+					outColor.a = 255; //Восстанавливаем альфу
+					// Рисуем пиксель
+					this.SetFramePixel( Math.floor( widthH + x ) , Math.floor( heightH + y ) , outColor , point1.z );
+				}
+			}
+		}
 	}
 	/**
 	 ** @desc Рисует линию к точке
