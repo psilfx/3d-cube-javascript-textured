@@ -51,7 +51,7 @@ class Draw {
 			let uv       = triangle.GetUV();
 			let triColor = this.GetColorFromPoint( points[ 0 ] , normal , frags[ 0 ] , light );
 			//this.TextureTriangle( points , uv , triColor  );
-			this.TextureTriangleBarucentric( points , uv , triColor  );
+			this.TextureTriangleBarycentric( triangle , uv , triColor );
 		}
 	}
 	/**
@@ -93,9 +93,7 @@ class Draw {
 	 **/
 	TextureTriangle( triangle , uv , defColor ) {
 		//Точки треугольника
-		let point1 = new Vector3F( triangle[ 0 ].x * figscaleX , triangle[ 0 ].y * figscaleY , triangle[ 0 ].z );
-		let point2 = new Vector3F( triangle[ 1 ].x * figscaleX , triangle[ 1 ].y * figscaleY , triangle[ 1 ].z );
-		let point3 = new Vector3F( triangle[ 2 ].x * figscaleX , triangle[ 2 ].y * figscaleY , triangle[ 2 ].z );
+		let { point1 , point2 , point3 } = triangle.GetTransformedPoints();
 		//Получаем разницу отрезков для текстурирования
 		let dda1   = this.GetDDAStep( point1 , point2 );
 		let dda2   = this.GetDDAStep( point1 , point3 );
@@ -180,11 +178,9 @@ class Draw {
 	 ** @desc Закрашивает треугольник пикселями используя барицентрические координаты
 	 ** @vars (array) triangle - массив точек треугольника, (array) uv - массив координат текстур для точек, (Color) defColor - цвет с значением diff для треугольника
 	 **/
-	TextureTriangleBarucentric( triangle , uv , defColor ) {
+	TextureTriangleBarycentric( triangle , uv , defColor ) {
 		//Преобразует точки в пространство экрана
-		let point1 = new Vector3F( triangle[ 0 ].x * figscaleX , triangle[ 0 ].y * figscaleY , triangle[ 0 ].z );
-		let point2 = new Vector3F( triangle[ 1 ].x * figscaleX , triangle[ 1 ].y * figscaleY , triangle[ 1 ].z );
-		let point3 = new Vector3F( triangle[ 2 ].x * figscaleX , triangle[ 2 ].y * figscaleY , triangle[ 2 ].z );
+		let { point1 , point2 , point3 } = triangle.GetTransformedPoints();
 		//Координаты текстуры для каждой точки
 		let uv1    = uv[ 0 ].Copy();
 		let uv2    = uv[ 1 ].Copy();

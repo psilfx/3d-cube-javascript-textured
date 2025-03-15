@@ -2,6 +2,7 @@
  ** @desc Стандартный объект для работы с треугольником, применяется при хранении и рендере полигонов
  **/
 class Triangle {
+	id               = 0;
 	points           = [];
 	normals          = [];
 	uv               = [];
@@ -15,7 +16,8 @@ class Triangle {
 	** @desc Принимает массив из трёх точек и трёх нормалей, для формирования треугольника
 	** @vars (array) points - массив из трёх точек треугольника, (array) normals - нормали точек , (array) uv - коордианты текстур для точек
 	**/
-	constructor( points = [ new Vector3F() , new Vector3F() , new Vector3F() ] , normals = [ new Vector3F() , new Vector3F() , new Vector3F() ] , uv = [ new Vector3F( 1 , 1 ) , new Vector3F( 0 , 1 ) , new Vector3F( 0 , 0 ) ] ) {
+	constructor( id = 0 , points = [ new Vector3F() , new Vector3F() , new Vector3F() ] , normals = [ new Vector3F() , new Vector3F() , new Vector3F() ] , uv = [ new Vector3F( 1 , 1 ) , new Vector3F( 0 , 1 ) , new Vector3F( 0 , 0 ) ] ) {
+		this.id           = id;
 		this.points[ 0 ]  = points[ 0 ];
 		this.points[ 1 ]  = points[ 1 ];
 		this.points[ 2 ]  = points[ 2 ];
@@ -28,6 +30,12 @@ class Triangle {
 		//Создаём пустые вектора, дабы не словить ошибку при вызове пустого объекта
 		this.normal          = new Vector3F();
 		this.normalTransform = new Vector3F();
+	}
+	GetTransformedPoints() {
+		let point1 = new Vector3F( this.pointsTransform[ 0 ].x * figscaleX , this.pointsTransform[ 0 ].y * figscaleY , this.pointsTransform[ 0 ].z );
+		let point2 = new Vector3F( this.pointsTransform[ 1 ].x * figscaleX , this.pointsTransform[ 1 ].y * figscaleY , this.pointsTransform[ 1 ].z );
+		let point3 = new Vector3F( this.pointsTransform[ 2 ].x * figscaleX , this.pointsTransform[ 2 ].y * figscaleY , this.pointsTransform[ 2 ].z );
+		return { point1 , point2 , point3 };
 	}
 	/**
 	 ** @desc Считает основную нормаль, для треугольника, как правило нормали у точек совпадают, чтобы не делать одно и тоже три раза

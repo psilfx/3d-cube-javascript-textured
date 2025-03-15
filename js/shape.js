@@ -33,6 +33,7 @@ class Shape3D {
 		let points  = this.points;
 		let normals = this.normals;
 		let uv      = this.uv;
+		let id      = 0;
 		for( let p = 0; p < indices.length; p += 3 ) {
 			let i1      = indices[ p ];
 			let i2      = indices[ p + 1 ];
@@ -47,9 +48,10 @@ class Shape3D {
 			let uv2     = uv[ i2 ].Copy();
 			let uv3     = uv[ i3 ].Copy();
 			//Создаём треугольник и добавляем в массив
-			let triangle = new Triangle( [ point1  , point2  , point3 ] , [ normal1 , normal2 , normal3 ] , [ uv1 , uv2 , uv3 ] );
+			let triangle = new Triangle( id , [ point1  , point2  , point3 ] , [ normal1 , normal2 , normal3 ] , [ uv1 , uv2 , uv3 ] );
 				triangle.CalcNormal();
 			this.triangles.push( triangle );
+			id++;
 		}
 		
 	}
@@ -172,7 +174,7 @@ class Shape3D {
 			if( cutTriangles.length > 0 ) {
 				for( let ct = 0; ct < cutTriangles.length; ct++ ) {
 					let cutTriangleFrags = cutTriangles[ ct ];
-					let cutTriangle      = new Triangle( [] , [] , triangle.GetUV() );
+					let cutTriangle      = new Triangle( triangle.id , [] , [] , triangle.GetUV() );
 					for( let p = 0; p < cutTriangleFrags.length; p++ ) {
 						let frag = cutTriangleFrags[ p ];
 						cutTriangle.pointsTransform[ p ]  = mat4.MultiplyVector( viewProjectionMatrix ,frag );

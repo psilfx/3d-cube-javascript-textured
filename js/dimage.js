@@ -75,9 +75,9 @@ class DImage {
 	GetPixelByUV( x , y ) {
 		x = Math.abs( x );
 		y = Math.abs( y );
-		x = parseInt( ( x - parseInt( x ) ) * this.img.width );
-		y = parseInt( ( y - parseInt( y ) ) * this.img.height );
-		return this.GetPixelFromData( x , y );
+		x = parseInt( ( x - Math.floor( x ) ) * this.img.width );
+		y = parseInt( ( y - Math.floor( y ) ) * this.img.height );
+		return this.GetRGBAPixel( x , y );
 	}
 	/**
 	 ** @desc Получает и возвращает пиксель напрямую из массива
